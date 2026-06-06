@@ -48,6 +48,7 @@ cargo clippy --workspace --all-targets
 ## Contributing
 
 Contributions, issues, and suggestions are welcome. See `CONTRIBUTING.md` for the basic workflow.
+GitHub Issues are the canonical backlog for planned work.
 
 ## License
 
