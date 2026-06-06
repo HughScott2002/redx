@@ -1,3 +1,5 @@
+![Redx banner](header_banner.png)
+
 # Redx
 
 Redx is a Redis-inspired server implementation written in Rust.
