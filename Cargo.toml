@@ -1,0 +1,8 @@
+[workspace]
+resolver = "3"
+members = [
+  "redx_core",
+  "redx_protocol",
+  "redx_server",
+]
+default-members = ["redx_server"]
