@@ -3,6 +3,7 @@ use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Command {
+    Ping,
     Keys { pattern: String },
     Exit,
 }
@@ -19,43 +20,65 @@ pub enum ParseError {
 }
 
 pub fn parse(tokens: &[Token]) -> Result<Command, ParseError> {
-    let first = tokens.first().ok_or(ParseError::EmptyInput)?;
-    let command = first.value();
+    parse_parts(tokens.iter().map(Token::value))
+}
+
+pub(crate) fn parse_parts<'a>(
+    parts: impl IntoIterator<Item = &'a str>,
+) -> Result<Command, ParseError> {
+    let parts: Vec<&str> = parts.into_iter().collect();
+    let command = parts.first().copied().ok_or(ParseError::EmptyInput)?;
 
     if command.eq_ignore_ascii_case("exit") {
-        return parse_exit(tokens);
+        return parse_exit(&parts);
+    }
+
+    if command.eq_ignore_ascii_case("PING") {
+        return parse_ping(&parts);
     }
 
     if command.eq_ignore_ascii_case("KEYS") {
-        return parse_keys(tokens);
+        return parse_keys(&parts);
     }
 
     Err(ParseError::UnknownCommand(command.to_string()))
 }
 
-fn parse_exit(tokens: &[Token]) -> Result<Command, ParseError> {
-    if tokens.len() == 1 {
+fn parse_exit(parts: &[&str]) -> Result<Command, ParseError> {
+    if parts.len() == 1 {
         Ok(Command::Exit)
     } else {
         Err(ParseError::InvalidArity {
             command: "exit".into(),
             expected: 0,
-            got: tokens.len() - 1,
+            got: parts.len() - 1,
         })
     }
 }
 
-fn parse_keys(tokens: &[Token]) -> Result<Command, ParseError> {
-    if tokens.len() != 2 {
+fn parse_ping(parts: &[&str]) -> Result<Command, ParseError> {
+    if parts.len() == 1 {
+        Ok(Command::Ping)
+    } else {
+        Err(ParseError::InvalidArity {
+            command: "PING".into(),
+            expected: 0,
+            got: parts.len() - 1,
+        })
+    }
+}
+
+fn parse_keys(parts: &[&str]) -> Result<Command, ParseError> {
+    if parts.len() != 2 {
         return Err(ParseError::InvalidArity {
             command: "KEYS".into(),
             expected: 1,
-            got: tokens.len().saturating_sub(1),
+            got: parts.len().saturating_sub(1),
         });
     }
 
     Ok(Command::Keys {
-        pattern: tokens[1].value().to_string(),
+        pattern: parts[1].to_string(),
     })
 }
 
@@ -100,6 +123,13 @@ mod tests {
         let tokens = tokenize("exit");
 
         assert_eq!(parse(&tokens).unwrap(), Command::Exit);
+    }
+
+    #[test]
+    fn parses_ping_case_insensitive() {
+        let tokens = tokenize("ping");
+
+        assert_eq!(parse(&tokens).unwrap(), Command::Ping);
     }
 
     #[test]
